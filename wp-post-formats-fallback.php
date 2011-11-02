@@ -33,6 +33,10 @@ Author URI: http://crowdfavorite.com
 
 function cfpff_init() {
 	if (!is_admin()) {
+//	if (!current_theme_support('post-formats') && !is_admin()) {
+// TODO - also check for post format support here?
+// Was getting a suprious true response on check, not sure why. Also, need to consider
+// themes that support post formats but not these custom fields
 		add_action('the_posts', 'cfpff_the_posts');
 	}
 }
@@ -70,7 +74,7 @@ function cfpff_the_posts($posts) {
 
 function cfpff_fallback_link($post) {
 	$url = get_post_meta($post->ID, '_format_link_url', true);
-	if (!empty($url)) {
+	if (!empty($url) && strpos($post->post_content, $url) === false) {
 		$parts = parse_url($url);
 		$post->post_content .= "\n\n"
 		.'<p><a href="'.esc_url($url).'">'.sprintf(__('View on %s', 'cf-post-formats-fallback'), esc_html($parts['host'])).'</a></p>';
@@ -78,7 +82,7 @@ function cfpff_fallback_link($post) {
 	return $post->post_content;
 }
 
-// TODO - test
+// TODO - check for existing image in post before prepending
 function cfpff_fallback_image($post) {
 	$image_id = intval(get_post_meta($post->ID, '_thumbnail_id', true));
 	if ($image_id) {
@@ -87,38 +91,36 @@ function cfpff_fallback_image($post) {
 	return $post->post_content;
 }
 
-// TODO - test
 function cfpff_fallback_gallery($post) {
-	$gallery = do_shortcode('[gallery]');
-	if (!empty($gallery)) {
-		$post->post_content = $gallery."\n\n".$post->post_content;
+	if (strpos($post->post_content, '[gallery') === false) {
+		$gallery = do_shortcode('[gallery]');
+		if (!empty($gallery)) {
+			$post->post_content = $gallery."\n\n".$post->post_content;
+		}
 	}
 	return $post->post_content;
 }
 
-// TODO - test
 function cfpff_fallback_video($post) {
 	$embed = get_post_meta($post->ID, '_format_video_embed', true);
-	if (!empty($embed)) {
+	if (!empty($embed) && strpos($post->post_content, $embed) === false) {
 		$post->post_content = $embed."\n\n".$post->post_content;
 	}
 	return $post->post_content;
 }
 
-// TODO - test
 function cfpff_fallback_audio($post) {
 	$embed = get_post_meta($post->ID, '_format_audio_embed', true);
-	if (!empty($embed)) {
+	if (!empty($embed) && strpos($post->post_content, $embed) === false) {
 		$post->post_content = $embed."\n\n".$post->post_content;
 	}
 	return $post->post_content;
 }
 
-// TODO - test
 function cfpff_fallback_quote($post) {
 	$name = get_post_meta($post->ID, '_format_quote_source_name', true);
 	$url = get_post_meta($post->ID, '_format_quote_source_url', true);
-	if (!empty($name)) {
+	if (!empty($name) && strpos($post->post_content, esc_html($name)) === false) {
 		$post->post_content .= "\n\n".'<p>&mdash; <i>'.(!empty($url) ? '<a href="'.esc_url($url).'">'.esc_html($name).'</a>' : esc_html($name)).'</i></p>';
 	}
 	return $post->post_content;
